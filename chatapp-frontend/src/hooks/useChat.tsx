@@ -21,7 +21,7 @@ export default function useChat() {
     const startConnection = async () => {
 
       const newConnection = new SignalR.HubConnectionBuilder()
-        .withUrl("http://10.154.213.147:5249/chathub")
+        .withUrl(`${import.meta.env.VITE_API_URL ?? 'http://10.154.213.146:5249'}/chathub`)
         .withAutomaticReconnect()
         .build();
 

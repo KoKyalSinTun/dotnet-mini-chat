@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.UseUrls("http://10.154.213.147:5249");
+// URL binding removed to avoid binding to an unavailable/non-local IP.
+// Configure URLs via the ASPNETCORE_URLS environment variable or launchSettings.json (applicationUrl) when needed.
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
@@ -17,10 +18,21 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:5174", "http://10.154.213.147:5174") 
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials(); 
+        // In development allow the Vite dev server origins used in this environment.
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.SetIsOriginAllowed(_ => true)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
+        else
+        {
+            policy.WithOrigins("http://10.154.213.146/:5174")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
     });
 });
 
