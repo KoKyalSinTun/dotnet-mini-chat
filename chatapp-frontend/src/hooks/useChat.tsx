@@ -6,7 +6,7 @@ export default function useChat() {
   const connectionRef = useRef<SignalR.HubConnection | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
-  const messageEndRef = useRef<HTMLDivElement | null>(null)
+  const messageEndRef = useRef<HTMLDivElement | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState("");
@@ -19,73 +19,76 @@ export default function useChat() {
     if (!joined) return;
 
     const startConnection = async () => {
-
       const newConnection = new SignalR.HubConnectionBuilder()
-        .withUrl("http://10.154.213.147:5249/chathub")
+        .withUrl("http://localhost:5249/chathub")
         .withAutomaticReconnect()
         .build();
 
-      newConnection.on("LoadMessages", (messages: ServerMessage[], reactions: ServerReaction[]) => {
-        const mapped: Message[] = messages.map(( m ) => ({
-          id: m.id,
-          user: m.user,
-          text: m.text,
-          time: new Date(m.createdAt).toLocaleDateString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          reactions: {}
-        }));
+      newConnection.on(
+        "LoadMessages",
+        (messages: ServerMessage[], reactions: ServerReaction[]) => {
+          const mapped: Message[] = messages.map((m) => ({
+            id: m.id,
+            user: m.user,
+            text: m.text,
+            time: new Date(m.createdAt).toLocaleDateString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            reactions: {},
+          }));
 
-        reactions.forEach((r) => {
-          const msg = mapped.find( m => m.id === r.messageId )
-          if (!msg) return;
+          reactions.forEach((r) => {
+            const msg = mapped.find((m) => m.id === r.messageId);
+            if (!msg) return;
 
-          if (!msg.reactions[r.emoji])
-            msg.reactions[r.emoji] = []
+            if (!msg.reactions[r.emoji]) msg.reactions[r.emoji] = [];
 
-          msg.reactions[r.emoji].push(r.username)
-        })
-        setMessages(mapped)
-        
-      })
+            msg.reactions[r.emoji].push(r.username);
+          });
+          setMessages(mapped);
+        },
+      );
 
       newConnection.on("UpdateUsers", (users: string[]) => {
         setOnlineUser(users);
       });
 
-      newConnection.on("ReceiveMessage", (id: string, user: string, text: string) => {
-        const time = new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
+      newConnection.on(
+        "ReceiveMessage",
+        (id: string, user: string, text: string) => {
+          const time = new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
 
-        const newMessage: Message = {
-          id,
-          user,
-          text,
-          time,
-          reactions: {}
-        }
+          const newMessage: Message = {
+            id,
+            user,
+            text,
+            time,
+            reactions: {},
+          };
 
-        setMessages(prev => [...prev, newMessage]);
-      });
+          setMessages((prev: any) => [...prev, newMessage]);
+        },
+      );
 
       newConnection.on("UserTyping", (user: string, isTyping: boolean) => {
         if (user === username) return;
 
-        setTypingUsers(prev => {
+        setTypingUsers((prev: string[]) => {
           if (isTyping) {
             return prev.includes(user) ? prev : [...prev, user];
           } else {
-            return prev.filter(u => u !== user);
+            return prev.filter((u) => u !== user);
           }
         });
       });
 
-      newConnection.on("ReceiveReaction", (messageId, emoji, username, add) => {
-        setMessages(prev =>
-          prev.map(msg => {
+      newConnection.on("ReceiveReaction", (messageId: any, emoji: string | number, username: any, add: any) => {
+        setMessages((prev: any[]) =>
+          prev.map((msg) => {
             if (msg.id !== messageId) return msg;
 
             const reactions = { ...msg.reactions };
@@ -93,18 +96,21 @@ export default function useChat() {
             if (!reactions[emoji]) reactions[emoji] = [];
 
             if (add) {
-              if (!reactions[emoji].includes(username)) reactions[emoji].push(username);
+              if (!reactions[emoji].includes(username))
+                reactions[emoji].push(username);
             } else {
-              reactions[emoji] = reactions[emoji].filter(user => user !== username)
+              reactions[emoji] = reactions[emoji].filter(
+                (user: any) => user !== username,
+              );
               if (reactions[emoji].length === 0) delete reactions[emoji];
             }
 
-            return { ...msg, reactions }
-          }))
-      })
+            return { ...msg, reactions };
+          }),
+        );
+      });
 
       try {
-
         // ✅ START CONNECTION AFTER LISTENERS
         await newConnection.start();
 
@@ -112,7 +118,6 @@ export default function useChat() {
 
         // ✅ REGISTER USER AFTER START
         await newConnection.invoke("RegisterUser", username);
-
       } catch (err) {
         console.error(err);
       }
@@ -124,12 +129,11 @@ export default function useChat() {
       connectionRef.current?.stop();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
-
   }, [joined, username]);
 
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const sendMessage = async () => {
     if (!connectionRef.current || !message.trim()) return;
@@ -146,7 +150,7 @@ export default function useChat() {
   const sendReaction = async (messageId: string, emoji: string) => {
     if (!connectionRef.current) return;
 
-    const message = messages.find(msg => msg.id === messageId);
+    const message = messages.find((msg: { id: string; }) => msg.id === messageId);
     if (!message) return;
 
     const userHasReacted = message.reactions[emoji]?.includes(username);
@@ -156,19 +160,17 @@ export default function useChat() {
       messageId,
       emoji,
       username,
-      !userHasReacted
-    )
-  }
+      !userHasReacted,
+    );
+  };
 
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
-
     const value = e.target.value;
     setMessage(value);
 
     if (!connectionRef.current) return;
 
     if (!isTypingRef.current) {
-
       connectionRef.current.invoke("SendTyping", username, true);
 
       isTypingRef.current = true;
@@ -179,11 +181,9 @@ export default function useChat() {
     }
 
     typingTimeoutRef.current = setTimeout(() => {
-
       connectionRef.current?.invoke("SendTyping", username, false);
 
       isTypingRef.current = false;
-
     }, 1200);
   };
 
@@ -199,6 +199,6 @@ export default function useChat() {
     handleTyping,
     sendMessage,
     sendReaction,
-    messageEndRef
+    messageEndRef,
   };
 }

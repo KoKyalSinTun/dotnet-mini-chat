@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.UseUrls("http://10.154.213.147:5249");
+builder.WebHost.UseUrls("http://localhost:5249");
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
@@ -17,7 +17,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:5174", "http://10.154.213.147:5174") 
+        policy.WithOrigins("http://localhost:5174", "http://localhost:5174") 
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials(); 
